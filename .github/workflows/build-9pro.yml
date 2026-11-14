@@ -1,0 +1,29 @@
+name: build-9pro-3190
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: thumbv8m.main-none-eabi
+      - run: sudo apt-get update && sudo apt-get install -y clang lld llvm python3
+      - run: cargo build -p canopus-cli
+      - name: build supervisor
+        env:
+          CANOPUS_TARGET: xiaomi-band-9-pro-3.1.190
+        run: ./scripts/build_canopus_supervisor.sh
+      - name: package face
+        run: |
+          python3 pack_face.py --self-test --template face-template.face
+          python3 pack_face.py --template face-template.face \
+            --src watchfaces/canopus-installer-prod/xiaomi-band-9-pro \
+            --out canopus-installer-9pro-3.1.190.face \
+            --name "Canopus 9 Pro"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: canopus-9pro
+          path: canopus-installer-9pro-3.1.190.face
